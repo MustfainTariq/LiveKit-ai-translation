@@ -3,6 +3,10 @@ import logging
 import json
 import time
 import re
+import websockets
+import websockets.server
+import threading
+from typing import Set, Any
 
 from enum import Enum
 from dataclasses import dataclass, asdict
@@ -25,6 +29,60 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger("transcriber")
+
+# WebSocket server for display clients
+connected_displays: Set[Any] = set()
+
+async def register_display(websocket):
+    """Register a new display client"""
+    global connected_displays
+    
+    connected_displays.add(websocket)
+    logger.info(f"Display client connected. Total displays: {len(connected_displays)}")
+    try:
+        await websocket.wait_closed()
+    finally:
+        connected_displays.discard(websocket)
+        logger.info(f"Display client disconnected. Total displays: {len(connected_displays)}")
+
+async def broadcast_to_displays(message_type: str, language: str, text: str):
+    """Broadcast transcription/translation to all connected display clients"""
+    global connected_displays
+    
+    if not connected_displays:
+        logger.debug(f"No display clients connected to receive {message_type}")
+        return
+    
+    message = {
+        "type": message_type,
+        "language": language,
+        "text": text,
+        "timestamp": time.time()
+    }
+    
+    message_json = json.dumps(message)
+    logger.info(f"Broadcasting to {len(connected_displays)} displays: {message_type} ({language}): {text[:50]}...")
+    
+    # Send to all connected displays
+    disconnected = set()
+    for websocket in connected_displays.copy():
+        try:
+            await websocket.send(message_json)
+        except websockets.exceptions.ConnectionClosed:
+            disconnected.add(websocket)
+        except Exception as e:
+            logger.error(f"Error broadcasting to display: {e}")
+            disconnected.add(websocket)
+    
+    # Remove disconnected clients
+    connected_displays -= disconnected
+
+async def start_websocket_server():
+    """Start WebSocket server for display clients"""
+    logger.info("Starting WebSocket server for display clients on port 8765...")
+    server = await websockets.serve(register_display, "localhost", 8765)
+    logger.info("WebSocket server started on ws://localhost:8765")
+    return server
 
 
 @dataclass
@@ -171,6 +229,9 @@ class Translator:
             )
             await self.room.local_participant.publish_transcription(transcription)
 
+            # Also broadcast to WebSocket display clients
+            asyncio.create_task(broadcast_to_displays("translation", self.lang.code, translated_message))
+
             logger.info(f"Successfully translated: '{message}' -> '{translated_message}' ({source_lang_name} to {self.lang.name})")
             
         except Exception as e:
@@ -209,6 +270,11 @@ async def entrypoint(job: JobContext):
     tasks = []
     translators = {}
     
+    # ALWAYS add Dutch translator for display page
+    dutch_language = languages["nl"]  # Dutch
+    translators["nl"] = Translator(job.room, dutch_language)
+    logger.info(f"🇳🇱 AUTOMATICALLY added Dutch translator for display page")
+    
     # Sentence accumulation for proper sentence-by-sentence translation
     accumulated_text = ""  # Accumulates text until we get a complete sentence
     last_final_transcript = ""  # Keep track of the last final transcript to avoid duplicates
@@ -216,7 +282,7 @@ async def entrypoint(job: JobContext):
     pending_translation_task = None
     
     logger.info(f"🚀 Starting entrypoint for room: {job.room.name if job.room else 'unknown'}")
-    logger.info(f"📝 Initialized empty translators dictionary: {translators}")
+    logger.info(f"📝 Initialized translators with Dutch: {list(translators.keys())}")
     logger.info(f"🔍 Translators dict ID: {id(translators)}")
     logger.info(f"🗣️ STT configured for {languages[source_language].name} speech recognition (source language: {source_language})")
     logger.info(f"🇸🇦 ARABIC is set as the default host/speaker language")
@@ -339,6 +405,10 @@ async def entrypoint(job: JobContext):
                                 job.room.local_participant.identity, "", [final_segment]
                             )
                             await job.room.local_participant.publish_transcription(final_transcription)
+                            
+                            # Also broadcast Arabic transcription to WebSocket display clients
+                            asyncio.create_task(broadcast_to_displays("transcription", source_language, final_text))
+                            
                             logger.info(f"✅ Published final {languages[source_language].name} transcription: '{final_text}'")
                         except Exception as e:
                             logger.error(f"❌ Failed to publish final transcription: {str(e)}")
@@ -509,9 +579,14 @@ async def entrypoint(job: JobContext):
         else:
             logger.debug(f"No caption language change for participant {participant.identity}")
 
+    # Start WebSocket server for display clients
+    logger.info("Starting WebSocket server for display clients...")
+    websocket_server = await start_websocket_server()
+    
     logger.info("Connecting to room...")
     await job.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     logger.info(f"Successfully connected to room: {job.room.name}")
+    logger.info(f"📡 WebSocket server running - display clients can connect to ws://localhost:8765")
     
     # Debug room state after connection
     logger.info(f"Room participants: {len(job.room.remote_participants)}")

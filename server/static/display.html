@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Arabic to Dutch Translation Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .transcription-section {
+            position: absolute;
+            top: 80px;
+            right: 80px;
+            max-width: 50%;
+            text-align: right;
+        }
+
+        .transcription-label {
+            color: #555555;
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .transcription-text {
+            color: #000000;
+            font-size: 48px;
+            font-weight: 400;
+            line-height: 1.4;
+            direction: rtl;
+            text-align: right;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .translation-section {
+            position: absolute;
+            bottom: 80px;
+            left: 80px;
+            max-width: 50%;
+            text-align: left;
+        }
+
+        .translation-label {
+            color: #555555;
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .translation-text {
+            color: #000000;
+            font-size: 48px;
+            font-weight: 400;
+            line-height: 1.4;
+            direction: ltr;
+            text-align: left;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .waiting-text {
+            color: #999999;
+            font-style: italic;
+        }
+
+        .debug-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: #666666;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info" id="debugInfo">
+        Status: Initializing...
+    </div>
+
+    <div class="transcription-section">
+        <div class="transcription-label">Arabic Transcription</div>
+        <div class="transcription-text waiting-text" id="arabicText">
+            Waiting for Arabic speech...
+        </div>
+    </div>
+
+    <div class="translation-section">
+        <div class="translation-label">Dutch Translation</div>
+        <div class="translation-text waiting-text" id="dutchText">
+            Waiting for translation...
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let isConnected = false;
+        let currentArabicText = '';
+        let currentDutchText = '';
+
+        const arabicTextElement = document.getElementById('arabicText');
+        const dutchTextElement = document.getElementById('dutchText');
+        const debugElement = document.getElementById('debugInfo');
+
+        function updateDebug(message) {
+            console.log(message);
+            if (debugElement) {
+                debugElement.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+                debugElement.style.display = 'block';
+                
+                // Hide after 3 seconds unless it's an error
+                const hideTimeout = message.includes('Error') || message.includes('Failed') ? 10000 : 3000;
+                setTimeout(() => {
+                    debugElement.style.display = 'none';
+                }, hideTimeout);
+            }
+        }
+
+        function updateArabicText(text) {
+            currentArabicText = text;
+            arabicTextElement.textContent = text;
+            arabicTextElement.classList.remove('waiting-text');
+            console.log('Updated Arabic text:', text);
+        }
+
+        function updateDutchText(text) {
+            currentDutchText = text;
+            dutchTextElement.textContent = text;
+            dutchTextElement.classList.remove('waiting-text');
+            console.log('Updated Dutch text:', text);
+        }
+
+        function connectWebSocket() {
+            try {
+                updateDebug('Connecting to WebSocket server...');
+                websocket = new WebSocket('ws://localhost:8765');
+
+                websocket.onopen = function(event) {
+                    console.log('WebSocket connected');
+                    updateDebug('Connected to translation server');
+                    isConnected = true;
+                };
+
+                websocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('Received message:', data);
+
+                        if (data.type === 'transcription' && data.language === 'ar') {
+                            // Arabic transcription
+                            console.log('*** UPDATING ARABIC TEXT ***:', data.text);
+                            updateArabicText(data.text);
+                            updateDebug(`Arabic: ${data.text.substring(0, 30)}...`);
+                        } else if (data.type === 'translation' && data.language === 'nl') {
+                            // Dutch translation
+                            console.log('*** UPDATING DUTCH TEXT ***:', data.text);
+                            updateDutchText(data.text);
+                            updateDebug(`Dutch: ${data.text.substring(0, 30)}...`);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+
+                websocket.onclose = function(event) {
+                    console.log('WebSocket disconnected');
+                    updateDebug('Disconnected from server');
+                    isConnected = false;
+                    
+                    // Retry connection after 3 seconds
+                    setTimeout(() => {
+                        updateDebug('Retrying connection...');
+                        connectWebSocket();
+                    }, 3000);
+                };
+
+                websocket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateDebug('Connection error - retrying...');
+                };
+
+            } catch (error) {
+                console.error('Failed to connect WebSocket:', error);
+                updateDebug(`Connection failed: ${error.message}`);
+                
+                // Retry connection after 3 seconds
+                setTimeout(() => {
+                    updateDebug('Retrying connection...');
+                    connectWebSocket();
+                }, 3000);
+            }
+        }
+
+        // Initialize the application
+        function initializeApp() {
+            console.log('Initializing Live Translation Display...');
+            updateDebug('Starting connection...');
+            
+            // Start WebSocket connection
+            connectWebSocket();
+
+            // Handle page visibility changes
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !isConnected) {
+                    console.log('Page became visible, attempting to reconnect...');
+                    connectWebSocket();
+                }
+            });
+
+            // Handle cleanup when page is unloaded
+            window.addEventListener('beforeunload', () => {
+                if (websocket) {
+                    websocket.close();
+                }
+            });
+        }
+
+        // Wait for DOM to be ready and then initialize
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            // DOM is already ready
+            initializeApp();
+        }
+    </script>
+</body>
+</html> 
