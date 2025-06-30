@@ -123,8 +123,7 @@ export default function Party() {
       <div className="flex flex-col justify-between h-full w-full">
         <div className="flex justify-between">
           <div className="flex flex-col">
-            <p>Listening Party</p>
-            <h1 className="font-bold">Billie Eilish</h1>
+            <h1 className="font-bold">Jamma Khutbah</h1>
             {/* Connection status indicator */}
             <div className="flex items-center gap-2 mt-1">
               <div className={`w-2 h-2 rounded-full ${

@@ -53,7 +53,7 @@ export default function Captions() {
           let { language, id } = segment;
 
           if (language === "") {
-            language = "en";
+            language = "ar";  // Default to Arabic as that's our source language
           }
 
           console.log(`📝 Adding segment: "${segment.text}" (${language})`);
@@ -77,7 +77,7 @@ export default function Captions() {
         
         for (const segment of segments) {
           let { language, text } = segment;
-          if (language === "") language = "en";
+          if (language === "") language = "ar";  // Default to Arabic as that's our source language
           
           // Build complete sentences by accumulating text
           if (!newBuffers[language]) {
@@ -180,12 +180,12 @@ export default function Captions() {
   }, [room, state.isHost, state.captionsLanguage]);
 
   // Get current sentences from buffers (more fluid display)
-  const englishSentence = sentenceBuffers["en"] || "";
+  const sourceSentence = sentenceBuffers["ar"] || "";  // Arabic as source language
   const translationSentence = sentenceBuffers[state.captionsLanguage] || "";
 
   // Fallback to segments if buffers are empty
-  const englishTranscriptions = transcriptions["en"] || {};
-  const englishSegments = Object.values(englishTranscriptions)
+  const sourceTranscriptions = transcriptions["ar"] || {};  // Arabic as source language
+  const sourceSegments = Object.values(sourceTranscriptions)
     .sort((a, b) => a.firstReceivedTime - b.firstReceivedTime)
     .slice(-2);
 
@@ -195,13 +195,13 @@ export default function Captions() {
     .slice(-2);
 
   // Use buffered sentences or fallback to latest segments
-  const displayEnglish = englishSentence || (englishSegments.length > 0 ? englishSegments[englishSegments.length - 1].text : "");
+  const displaySource = sourceSentence || (sourceSegments.length > 0 ? sourceSegments[sourceSegments.length - 1].text : "");
   const displayTranslation = translationSentence || (transcriptionSegments.length > 0 ? transcriptionSegments[transcriptionSegments.length - 1].text : "");
 
   // Debug logging
-  if (displayEnglish || displayTranslation) {
+  if (displaySource || displayTranslation) {
     console.log("📺 DISPLAYING:", {
-      english: displayEnglish,
+      source: displaySource,
       translation: displayTranslation,
       language: state.captionsLanguage
     });
@@ -215,22 +215,22 @@ export default function Captions() {
     >
 
 
-      {/* English Transcription (Clean, Simple) */}
+      {/* Source Language Transcription (Clean, Simple) */}
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-700 mb-6">🎤 Live Transcription</h3>
+        <h3 className="text-lg font-semibold text-gray-700 mb-6">🎤 Live Arabic Transcription</h3>
         <div className="min-h-[3rem] flex items-center justify-center">
-          {displayEnglish ? (
-            <p className="text-black text-4xl font-medium leading-relaxed text-center">
-              {displayEnglish}
+          {displaySource ? (
+            <p className="text-black text-4xl font-medium leading-relaxed text-center" dir="rtl">
+              {displaySource}
             </p>
           ) : (
-            <p className="text-gray-500 italic text-2xl">Waiting for transcriptions...</p>
+            <p className="text-gray-500 italic text-2xl">Waiting for Arabic transcriptions...</p>
           )}
         </div>
       </div>
 
       {/* Translation (Clean, Simple) */}
-      {state.captionsLanguage !== "en" && (
+      {state.captionsLanguage !== "ar" && (
         <div className="text-center border-t border-gray-200 pt-8">
           <h3 className="text-lg font-semibold text-gray-700 mb-6">
             🌐 Translation ({state.captionsLanguage.toUpperCase()})
@@ -252,7 +252,7 @@ export default function Captions() {
       )}
 
       {/* Instructions */}
-      {!state.isHost && state.captionsLanguage === "en" && Object.keys(transcriptions).length === 0 && (
+      {!state.isHost && state.captionsLanguage === "ar" && Object.keys(transcriptions).length === 0 && (
         <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-blue-800 text-lg">
             💡 Select a language from the dropdown below to see real-time translations!

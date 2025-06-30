@@ -18,7 +18,7 @@ const initialState: State = {
   serverUrl: "",
   shouldConnect: false,
   captionsEnabled: true,
-  captionsLanguage: "en",
+  captionsLanguage: "en",  // Default to English as first translation target language (Arabic is source)
   isHost: false,
 };
 

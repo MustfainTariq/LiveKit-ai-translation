@@ -83,18 +83,21 @@ const LanguageSelect = () => {
         });
         const languages = JSON.parse(response);
         console.log("Received languages:", languages);
-        setLanguages(languages);
+        // Filter out Arabic since it's the source language, not a translation target
+        const targetLanguages = languages.filter((lang: Language) => lang.code !== "ar");
+        setLanguages(targetLanguages);
       } catch (error) {
         console.error("RPC call failed: ", error);
         setError("Failed to fetch languages");
         
-        // Fallback to default languages if RPC fails
+        // Fallback to default languages if RPC fails (excluding Arabic as source language)
         const fallbackLanguages = [
           { code: "en", name: "English", flag: "🇺🇸" },
           { code: "es", name: "Spanish", flag: "🇪🇸" },
           { code: "fr", name: "French", flag: "🇫🇷" },
           { code: "de", name: "German", flag: "🇩🇪" },
           { code: "ja", name: "Japanese", flag: "🇯🇵" },
+          { code: "nl", name: "Dutch", flag: "🇳🇱" },
         ];
         console.log("Using fallback languages:", fallbackLanguages);
         setLanguages(fallbackLanguages);
