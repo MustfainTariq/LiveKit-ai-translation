@@ -1,0 +1,6 @@
+livekit-agents>=1.0.0
+livekit-plugins-openai>=1.0.0
+python-dotenv>=1.0.0
+livekit-plugins-speechmatics>=1.0.0
+livekit-plugins-silero>=1.0.0
+openai>=1.0.0
