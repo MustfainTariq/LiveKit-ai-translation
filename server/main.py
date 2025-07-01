@@ -1,12 +1,9 @@
 import asyncio
 import logging
 import json
-from operator import imod
 import time
 import re
 import websockets
-import websockets.server
-import threading
 from typing import Set, Any
 
 from enum import Enum
@@ -171,10 +168,16 @@ async def entrypoint(job: JobContext):
     source_language = "ar"  # Arabic is the default source language - host speaks Arabic
     
     # Configure Speechmatics STT for Arabic speech recognition
-    # Speechmatics supports Arabic language recognition
+    # Speechmatics supports Arabic language recognition with enhanced settings
     stt_provider = speechmatics.STT(
-        transcription_config=TranscriptionConfig(language="ar")
-    )  # Configure for Arabic using Speechmatics
+        transcription_config=TranscriptionConfig(
+            language="ar",
+            enable_partials=True,
+            max_delay=1.0,
+            punctuation_overrides={"sensitivity": 0.5},
+            diarization="speaker"
+        )
+    )  # Configure for Arabic using Speechmatics with partials, low delay, and speaker diarization
     
     tasks = []
     translators = {}
