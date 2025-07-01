@@ -41,13 +41,20 @@ Here's what's happening in this demo:
 5. Create `.env` file (see `server/SETUP.md` for details)
 6. `python main.py dev`
 
+
+### Run the Display Server
+1. `cd server`
+2. `python start_display_server.py`
+3. Open browser to `http://localhost:8080/display` for full-screen Arabic→Dutch display
+
+
 ### Run the client
 1. `cd client/web`
 2. `pnpm i`
 3. `cp .env.example .env.local`
 4. add values for keys in `.env.local`
 5. `pnpm dev`
-6. open a browser and navigate to `http://localhost:3000`
+6. open a browser and navigate to ` http://localhost:3000`
 
 ## Notes
 - For this demo, there can only be *one host*.

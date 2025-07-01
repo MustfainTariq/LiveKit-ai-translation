@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import json
+from operator import imod
 import time
 import re
 import websockets
@@ -24,6 +25,7 @@ from livekit.agents import (
     utils,
 )
 from livekit.plugins import openai, silero, speechmatics
+from livekit.plugins.speechmatics.types import TranscriptionConfig
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -104,154 +106,59 @@ languages = {
 
 LanguageCode = Enum(
     "LanguageCode",  # Name of the Enum
-    {code: lang.name for code, lang in languages.items()},  # Enum entries
+    {lang.name: code for code, lang in languages.items()},  # Enum entries: name -> code mapping
 )
 
 
 class Translator:
-    def __init__(self, room: rtc.Room, lang: Language):
+    def __init__(self, room: rtc.Room, lang: Enum):
         self.room = room
         self.lang = lang
-        self.conversation_context = []  # Store recent translations for context
-        self.max_context_length = 5  # Keep last 5 translations for context
-        
-        logger.info(f"Initialized translator for {lang.name} language")
+        # Fixed: Use append_message instead of append
+        self.context = llm.ChatContext()
+        self.context.add_message(
+            role="system",
+            content=(
+                f"You are a translator for language: {lang.value}. "
+                f"Your only response should be the exact translation of input text in the {lang.value} language."
+            ),
+        )
+        self.llm = openai.LLM()
 
-    async def translate(self, message: str, source_language: str = "ar"):  # Changed default to Arabic
-        try:
-            logger.info(f"Translating message from {source_language} to {self.lang.name}: '{message}'")
-            
-            # Get source language name
-            source_lang_name = languages.get(source_language, Language(code=source_language, name=source_language.upper(), flag="")).name
-            
-            # Build context from recent translations
-            context_str = ""
-            if self.conversation_context:
-                context_str = "\n\nRecent conversation context for reference:\n"
-                for i, (orig, trans) in enumerate(self.conversation_context[-3:], 1):  # Last 3 for context
-                    context_str += f"{source_lang_name}: \"{orig}\" → {self.lang.name}: \"{trans}\"\n"
-            
-            # Simple, direct system prompt without examples - optimized for Arabic source
-            system_prompt = (
-                f"You are a professional real-time translator specializing in Arabic to {self.lang.name} translation. "
-                f"Translate the following {source_lang_name} text to {self.lang.name}. "
-                f"Respond ONLY with the {self.lang.name} translation. Do not ask questions, provide explanations, or add any other text. "
-                f"Translate incomplete phrases, single words, and partial sentences directly as they would naturally appear in {self.lang.name}. "
-                f"Maintain the tone and style of the original Arabic text. Handle Arabic cultural context appropriately.{context_str}"
-            )
-            
-            # Use OpenAI directly with a simple completion
-            from openai import AsyncOpenAI
-            client = AsyncOpenAI()
-            
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": message}
-                ],
-                temperature=0.1,  # Very low temperature for consistent translations
-                max_tokens=150,   # Reasonable limit for translations
-                stream=True
-            )
-            
-            translated_message = ""
-            async for chunk in response:
-                # Handle OpenAI streaming response
-                try:
-                    if chunk.choices and chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
-                        translated_message += content
-                except Exception as chunk_error:
-                    logger.warning(f"Error processing chunk: {chunk_error}, chunk: {chunk}")
-                    continue
+    async def translate(self, message: str, track: rtc.Track):
+        # Fixed: Use append_message with content parameter instead of text
+        self.context.add_message(content=message, role="user")
+        stream = self.llm.chat(chat_ctx=self.context)
+        translated_message = ""
+        async for chunk in stream:
+            if chunk.delta is None:
+                continue
+            content = chunk.delta.content
+            if content is None:
+                break
+            translated_message += content
 
-            # Clean up the translation
-            translated_message = translated_message.strip()
-            
-            # Basic validation - if response seems like a question or explanation, retry once
-            if (translated_message.lower().startswith(("please", "i need", "could you", "what", "which", "how can", "i cannot", "sorry")) 
-                or "translate" in translated_message.lower()
-                or len(translated_message.split()) > len(message.split()) * 3):  # If translation is suspiciously long
-                
-                logger.warning(f"AI gave explanation instead of translation: '{translated_message}', retrying with stronger prompt")
-                
-                # Retry with even more direct prompt
-                retry_response = await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": f"Translate Arabic to {self.lang.name}. Only output the translation, nothing else."},
-                        {"role": "user", "content": f"Translate: {message}"}
-                    ],
-                    temperature=0.0,
-                    max_tokens=100,
-                    stream=True
-                )
-                
-                translated_message = ""
-                async for chunk in retry_response:
-                    try:
-                        if chunk.choices and chunk.choices[0].delta.content:
-                            content = chunk.choices[0].delta.content
-                            translated_message += content
-                    except Exception as chunk_error:
-                        logger.warning(f"Error processing retry chunk: {chunk_error}")
-                        continue
-                
-                translated_message = translated_message.strip()
-                
-                # If still getting bad response, use original message as fallback
-                if (translated_message.lower().startswith(("please", "i need", "could you", "what", "which", "how can", "i cannot", "sorry")) 
-                    or "translate" in translated_message.lower()):
-                    logger.error(f"AI still giving explanations after retry, using original message as fallback")
-                    translated_message = message  # Use original as last resort
+        segment = rtc.TranscriptionSegment(
+            id=utils.misc.shortuuid("SG_"),
+            text=translated_message,
+            start_time=0,
+            end_time=0,
+            language=self.lang.value,
+            final=True,
+        )
+        transcription = rtc.Transcription(
+            self.room.local_participant.identity, track.sid if track else "", [segment]
+        )
+        await self.room.local_participant.publish_transcription(transcription)
 
-            if not translated_message.strip():
-                logger.warning(f"Empty translation received for message: {message}")
-                translated_message = message  # Use original message if empty
+        # Also broadcast translation to WebSocket displays
+        asyncio.create_task(
+            broadcast_to_displays("translation", self.lang.value, translated_message)
+        )
 
-            # Update conversation context
-            self.conversation_context.append((message, translated_message))
-            if len(self.conversation_context) > self.max_context_length:
-                self.conversation_context = self.conversation_context[-self.max_context_length:]
-
-            # Publish the translation
-            segment = rtc.TranscriptionSegment(
-                id=utils.misc.shortuuid("SG_"),
-                text=translated_message,
-                start_time=0,
-                end_time=0,
-                language=self.lang.code,  # Use language code (ja, es, nl) not name (Japanese, Spanish, Dutch)
-                final=True,
-            )
-            transcription = rtc.Transcription(
-                self.room.local_participant.identity, "", [segment]
-            )
-            await self.room.local_participant.publish_transcription(transcription)
-
-            # Also broadcast to WebSocket display clients
-            asyncio.create_task(broadcast_to_displays("translation", self.lang.code, translated_message))
-
-            logger.info(f"Successfully translated: '{message}' -> '{translated_message}' ({source_lang_name} to {self.lang.name})")
-            
-        except Exception as e:
-            logger.error(f"Translation failed for {self.lang.name}: {str(e)}")
-            # Publish error message as fallback
-            error_segment = rtc.TranscriptionSegment(
-                id=utils.misc.shortuuid("SG_"),
-                text=f"[Translation error for {self.lang.name}]",
-                start_time=0,
-                end_time=0,
-                language=self.lang.code,  # Use language code (ja, es, nl) not name (Japanese, Spanish, Dutch)  
-                final=True,
-            )
-            error_transcription = rtc.Transcription(
-                self.room.local_participant.identity, "", [error_segment]
-            )
-            try:
-                await self.room.local_participant.publish_transcription(error_transcription)
-            except Exception as publish_error:
-                logger.error(f"Failed to publish error transcription: {str(publish_error)}")
+        print(
+            f"message: {message}, translated to {self.lang.value}: {translated_message}"
+        )
 
 
 def prewarm(proc: JobProcess):
@@ -263,16 +170,19 @@ async def entrypoint(job: JobContext):
     # This will be the language that users are actually speaking (host/speaker language)
     source_language = "ar"  # Arabic is the default source language - host speaks Arabic
     
-    # Configure OpenAI STT for Arabic speech recognition
-    # OpenAI Whisper has excellent Arabic language support
-    stt_provider = openai.STT(language="ar")  # Explicitly configure for Arabic
+    # Configure Speechmatics STT for Arabic speech recognition
+    # Speechmatics supports Arabic language recognition
+    stt_provider = speechmatics.STT(
+        transcription_config=TranscriptionConfig(language="ar")
+    )  # Configure for Arabic using Speechmatics
     
     tasks = []
     translators = {}
     
     # ALWAYS add Dutch translator for display page
-    dutch_language = languages["nl"]  # Dutch
-    translators["nl"] = Translator(job.room, dutch_language)
+    # Create Dutch enum member using getattr to avoid linter issues
+    dutch_enum = getattr(LanguageCode, 'Dutch')
+    translators["nl"] = Translator(job.room, dutch_enum)
     logger.info(f"🇳🇱 AUTOMATICALLY added Dutch translator for display page")
     
     # Sentence accumulation for proper sentence-by-sentence translation
@@ -284,7 +194,7 @@ async def entrypoint(job: JobContext):
     logger.info(f"🚀 Starting entrypoint for room: {job.room.name if job.room else 'unknown'}")
     logger.info(f"📝 Initialized translators with Dutch: {list(translators.keys())}")
     logger.info(f"🔍 Translators dict ID: {id(translators)}")
-    logger.info(f"🗣️ STT configured for {languages[source_language].name} speech recognition (source language: {source_language})")
+    logger.info(f"🗣️ STT configured for {languages[source_language].name} speech recognition using Speechmatics (source language: {source_language})")
     logger.info(f"🇸🇦 ARABIC is set as the default host/speaker language")
 
     def _extract_complete_sentences(text: str):
@@ -329,7 +239,7 @@ async def entrypoint(job: JobContext):
                 translation_tasks = []
                 for lang, translator in translators.items():
                     logger.info(f"📤 Sending complete Arabic sentence '{sentence}' to {lang} translator")
-                    translation_tasks.append(translator.translate(sentence, source_language))
+                    translation_tasks.append(translator.translate(sentence, None))
                 
                 # Execute all translations concurrently
                 if translation_tasks:
@@ -558,9 +468,10 @@ async def entrypoint(job: JobContext):
                 # Check if the language is supported and different from source language
                 if lang in languages:
                     try:
-                        # Create a translator for the requested language using the language object
+                        # Create a translator for the requested language using the language enum
                         language_obj = languages[lang]
-                        translators[lang] = Translator(job.room, language_obj)
+                        language_enum = getattr(LanguageCode, language_obj.name)
+                        translators[lang] = Translator(job.room, language_enum)
                         logger.info(f"🆕 Added translator for ROOM {job.room.name} (requested by {participant.identity}), language: {language_obj.name}")
                         logger.info(f"📊 Total translators for room {job.room.name}: {len(translators)} -> {list(translators.keys())}")
                         logger.info(f"🔍 Translators dict ID: {id(translators)}")
