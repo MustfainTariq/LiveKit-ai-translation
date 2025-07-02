@@ -4,7 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Arabic to Dutch Translation Display</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Islamic-inspired design system with soft, spiritual colors */
+        :root {
+            /* Islamic pink soft background with dark teal green text */
+            --background: hsl(330, 45%, 96%);
+            --foreground: hsl(180, 65%, 15%);
+
+            --card: hsl(330, 35%, 94%);
+            --card-foreground: hsl(180, 65%, 15%);
+
+            --popover: hsl(330, 35%, 94%);
+            --popover-foreground: hsl(180, 65%, 15%);
+
+            /* Dark teal green primary */
+            --primary: hsl(180, 65%, 20%);
+            --primary-foreground: hsl(330, 45%, 96%);
+
+            /* Soft rose gold accents */
+            --secondary: hsl(340, 30%, 85%);
+            --secondary-foreground: hsl(180, 65%, 15%);
+
+            --muted: hsl(330, 25%, 90%);
+            --muted-foreground: hsl(180, 40%, 35%);
+
+            /* Warm rose accent */
+            --accent: hsl(340, 40%, 80%);
+            --accent-foreground: hsl(180, 65%, 15%);
+
+            --destructive: hsl(0, 84.2%, 60.2%);
+            --destructive-foreground: hsl(330, 45%, 96%);
+
+            --border: hsl(330, 25%, 85%);
+            --input: hsl(330, 25%, 85%);
+            --ring: hsl(180, 65%, 25%);
+
+            --radius: 0.5rem;
+        }
+
+        .dark {
+            /* Enhanced dark mode with deeper islamic colors */
+            --background: hsl(210, 40%, 3%);
+            --foreground: hsl(180, 25%, 95%);
+
+            --card: hsl(210, 35%, 6%);
+            --card-foreground: hsl(180, 25%, 95%);
+
+            --popover: hsl(210, 35%, 6%);
+            --popover-foreground: hsl(180, 25%, 95%);
+
+            --primary: hsl(180, 45%, 35%);
+            --primary-foreground: hsl(180, 25%, 95%);
+
+            --secondary: hsl(45, 70%, 65%);
+            --secondary-foreground: hsl(210, 40%, 3%);
+
+            --muted: hsl(210, 35%, 10%);
+            --muted-foreground: hsl(210, 20%, 70%);
+
+            --accent: hsl(40, 75%, 60%);
+            --accent-foreground: hsl(210, 40%, 3%);
+
+            --destructive: hsl(0, 62.8%, 30.6%);
+            --destructive-foreground: hsl(210, 40%, 98%);
+
+            --border: hsl(210, 25%, 15%);
+            --input: hsl(210, 25%, 15%);
+            --ring: hsl(180, 45%, 55%);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,153 +81,524 @@
         }
 
         body {
-            background-color: #ffffff;
-            color: #000000;
-            font-family: 'Arial', sans-serif;
-            height: 100vh;
+            background: var(--background);
+            color: var(--foreground);
+            font-family: 'Noto Sans', 'Noto Sans Arabic', sans-serif;
+            font-weight: 500;
+            background-attachment: fixed;
+            min-height: 100vh;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            transition: all 0.3s ease;
         }
 
-        .transcription-section {
-            position: absolute;
-            top: 80px;
-            right: 80px;
-            max-width: 50%;
-            text-align: right;
-        }
-
-        .transcription-label {
-            color: #555555;
-            font-size: 24px;
-            font-weight: 300;
-            margin-bottom: 20px;
-            letter-spacing: 0.5px;
-        }
-
-        .transcription-text {
-            color: #000000;
-            font-size: 48px;
-            font-weight: 400;
-            line-height: 1.4;
-            direction: rtl;
-            text-align: right;
-            word-wrap: break-word;
-            hyphens: auto;
-        }
-
-        .translation-section {
-            position: absolute;
-            bottom: 80px;
-            left: 80px;
-            max-width: 50%;
-            text-align: left;
-        }
-
-        .translation-label {
-            color: #555555;
-            font-size: 24px;
-            font-weight: 300;
-            margin-bottom: 20px;
-            letter-spacing: 0.5px;
+        .translation-box {
+            background: color-mix(in srgb, var(--card) 10%, transparent);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--primary) 10%, transparent);
         }
 
         .translation-text {
-            color: #000000;
-            font-size: 48px;
-            font-weight: 400;
-            line-height: 1.4;
-            direction: ltr;
-            text-align: left;
+            color: var(--foreground);
+            line-height: 1.6;
+            font-family: 'Noto Sans', 'Noto Sans Arabic', sans-serif;
+            font-size: clamp(0.875rem, 2.5vw, 3rem);
             word-wrap: break-word;
             hyphens: auto;
         }
 
-        .waiting-text {
-            color: #999999;
+        /* Main container */
+        .main-container {
+            min-height: 100vh;
+            background: var(--background);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Control buttons */
+        .controls {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            z-index: 50;
+        }
+
+        .control-button {
+            padding: 0.75rem;
+            border-radius: 9999px;
+            background: color-mix(in srgb, var(--card) 20%, transparent);
+            border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            color: var(--foreground);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-button:hover {
+            background: color-mix(in srgb, var(--card) 30%, transparent);
+            transform: translateY(-2px);
+        }
+
+        .control-button svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Content container */
+        .content-container {
+            margin-top: 4rem;
+            flex: 1;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Translation section - fixed height */
+        .translation-section {
+            margin-bottom: 2rem;
+        }
+
+        .translation-content {
+            width: 100%;
+            max-width: 112rem;
+            margin: 0 auto;
+            height: calc(100vh - 17.5rem);
+            padding: 0.75rem 1rem 1.5rem;
+        }
+
+        .translation-scroll {
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding-top: 10%;
+        }
+
+        .translation-line {
+            text-align: center;
+            transition: all 0.5s ease;
+            opacity: 1;
+        }
+
+        .translation-line:first-child {
+            margin-bottom: 2rem;
+        }
+
+        .translation-line:not(:first-child) {
+            margin-bottom: 0.5rem;
+        }
+
+        .translation-line.waiting {
+            color: var(--muted-foreground);
             font-style: italic;
         }
 
-        .debug-info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 12px;
-            color: #666666;
-            background: rgba(0, 0, 0, 0.1);
-            padding: 5px 10px;
-            border-radius: 4px;
-            display: none; /* Hidden by default */
+        /* Arabic transcription section */
+        .transcription-section {
+            width: 100%;
+            max-width: 112rem;
+            margin: 0 auto;
+            height: 6rem;
+            padding: 0.75rem 1rem 1.5rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .transcription-section.hidden {
+            opacity: 0;
+            height: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .transcription-content {
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .arabic-container {
+            width: 100%;
+            text-align: right;
+            direction: rtl;
+        }
+
+        .arabic-words {
+            display: inline-flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            white-space: nowrap;
+            direction: rtl;
+        }
+
+        .arabic-word {
+            transition: all 0.3s ease;
+            opacity: 1;
+        }
+
+        .arabic-word.waiting {
+            color: var(--muted-foreground);
+            font-style: italic;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .fade-in-down {
+            animation: fadeInDown 0.3s ease-out;
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease-out;
+        }
+
+        /* Connection status */
+        .status-indicator {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            background: color-mix(in srgb, var(--card) 20%, transparent);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            padding: 0.5rem 0.75rem;
+            border-radius: 1.25rem;
+            font-size: 0.75rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.connected {
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+
+        .status-indicator.disconnected {
+            border-color: #f87171;
+            color: #f87171;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            .translation-content {
+                height: calc(100vh - 15rem);
+                padding: 0.75rem;
+            }
+            
+            .transcription-section {
+                height: 5.25rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .translation-content {
+                height: calc(100vh - 12.5rem);
+                padding: 0.5rem;
+            }
+            
+            .transcription-section {
+                height: 4.5rem;
+            }
+            
+            .controls {
+                top: 1rem;
+                right: 1rem;
+                gap: 0.5rem;
+            }
+            
+            .control-button {
+                padding: 0.625rem;
+            }
+            
+            .control-button svg {
+                width: 1rem;
+                height: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .translation-content {
+                height: calc(100vh - 11rem);
+                padding: 0.5rem;
+            }
+            
+            .transcription-section {
+                height: 3.75rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="debug-info" id="debugInfo">
-        Status: Initializing...
+    <!-- Control buttons -->
+    <div class="controls">
+        <button class="control-button" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+            <svg id="themeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+        <button class="control-button" id="transcriptionToggle" onclick="toggleTranscription()" aria-label="Toggle transcription visibility">
+            <svg id="transcriptionIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </button>
     </div>
 
-    <div class="transcription-section">
-        <div class="transcription-label">Arabic Transcription</div>
-        <div class="transcription-text waiting-text" id="arabicText">
-            Waiting for Arabic speech...
-        </div>
+    <!-- Status indicator -->
+    <div class="status-indicator" id="statusIndicator">
+        Connecting...
     </div>
 
-    <div class="translation-section">
-        <div class="translation-label">Dutch Translation</div>
-        <div class="translation-text waiting-text" id="dutchText">
-            Waiting for translation...
+    <!-- Main container -->
+    <div class="main-container">
+        <!-- Content container -->
+        <div class="content-container">
+            <!-- Translation Box - fixed height -->
+            <div class="translation-section">
+                <div class="translation-box translation-content">
+                    <div class="translation-scroll" id="translationScroll">
+                        <div class="translation-line translation-text waiting" id="waitingTranslation">
+                            Waiting for translation...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arabic Transcription Box -->
+            <div class="translation-box transcription-section" id="transcriptionSection">
+                <div class="transcription-content">
+                    <div class="arabic-container">
+                        <div class="arabic-words">
+                            <span class="arabic-word translation-text waiting" id="waitingArabic">
+                                انتظار النص العربي...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // Global variables
         let websocket = null;
         let isConnected = false;
-        let currentArabicText = '';
-        let currentDutchText = '';
+        let translationLines = [];
+        let arabicWords = [];
+        let showTranscription = true;
+        let isDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-        const arabicTextElement = document.getElementById('arabicText');
-        const dutchTextElement = document.getElementById('dutchText');
-        const debugElement = document.getElementById('debugInfo');
+        // DOM elements
+        const statusElement = document.getElementById('statusIndicator');
+        const transcriptionSection = document.getElementById('transcriptionSection');
+        const themeToggle = document.getElementById('themeToggle');
+        const transcriptionToggle = document.getElementById('transcriptionToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const transcriptionIcon = document.getElementById('transcriptionIcon');
+        const translationScroll = document.getElementById('translationScroll');
+        const waitingTranslation = document.getElementById('waitingTranslation');
+        const waitingArabic = document.getElementById('waitingArabic');
 
-        function updateDebug(message) {
-            console.log(message);
-            if (debugElement) {
-                debugElement.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
-                debugElement.style.display = 'block';
-                
-                // Hide after 3 seconds unless it's an error
-                const hideTimeout = message.includes('Error') || message.includes('Failed') ? 10000 : 3000;
-                setTimeout(() => {
-                    debugElement.style.display = 'none';
-                }, hideTimeout);
-            }
+        // Icon SVGs
+        const sunIcon = `<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
+        const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+        const eyeIcon = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
+        const eyeClosedIcon = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+
+        // Theme management
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.documentElement.classList.toggle('dark', isDarkTheme);
+            
+            themeIcon.innerHTML = isDarkTheme ? sunIcon : moonIcon;
+            
+            // Save theme preference
+            localStorage.setItem('displayTheme', isDarkTheme ? 'dark' : 'light');
         }
 
+        // Transcription visibility management
+        function toggleTranscription() {
+            showTranscription = !showTranscription;
+            transcriptionSection.classList.toggle('hidden', !showTranscription);
+            
+            transcriptionIcon.innerHTML = showTranscription ? eyeIcon : eyeClosedIcon;
+            
+            // Save visibility preference
+            localStorage.setItem('transcriptionHidden', (!showTranscription).toString());
+        }
+
+        // Status management
+        function updateStatus(message, type = 'normal') {
+            statusElement.textContent = message;
+            statusElement.className = `status-indicator ${type}`;
+            console.log(`Status (${type}):`, message);
+        }
+
+        // Check if text overflows container width
+        function checkTextOverflow() {
+            const arabicContainer = document.querySelector('.arabic-words');
+            const parentContainer = document.querySelector('.transcription-content');
+            
+            if (!arabicContainer || !parentContainer) return false;
+            
+            const containerWidth = parentContainer.offsetWidth;
+            const contentWidth = arabicContainer.scrollWidth;
+            
+            return contentWidth > containerWidth;
+        }
+
+        // Update Arabic text
         function updateArabicText(text) {
-            currentArabicText = text;
-            arabicTextElement.textContent = text;
-            arabicTextElement.classList.remove('waiting-text');
+            if (!text.trim()) return;
+
+            // Create new word element
+            const newWord = {
+                id: `word-${Date.now()}-${Math.random()}`,
+                text: text.trim(),
+                timestamp: Date.now()
+            };
+
+            arabicWords.push(newWord);
+
+            // Check for overflow and reset if needed
+            renderArabicWords();
+            
+            setTimeout(() => {
+                if (checkTextOverflow()) {
+                    arabicWords = [newWord];
+                    renderArabicWords();
+                }
+            }, 0);
+
             console.log('Updated Arabic text:', text);
         }
 
-        function updateDutchText(text) {
-            currentDutchText = text;
-            dutchTextElement.textContent = text;
-            dutchTextElement.classList.remove('waiting-text');
-            console.log('Updated Dutch text:', text);
+        // Render Arabic words
+        function renderArabicWords() {
+            const container = document.querySelector('.arabic-words');
+            
+            if (arabicWords.length === 0) {
+                container.innerHTML = '<span class="arabic-word translation-text waiting">انتظار النص العربي...</span>';
+                return;
+            }
+
+            container.innerHTML = arabicWords.map(word => 
+                `<span class="arabic-word translation-text fade-in-down">${word.text}</span>`
+            ).join('');
         }
 
+        // Update Dutch translation
+        function updateDutchTranslation(text) {
+            if (!text.trim()) return;
+
+            // Create new translation line
+            const newLine = {
+                id: `line-${Date.now()}-${Math.random()}`,
+                text: text.trim(),
+                timestamp: Date.now()
+            };
+
+            translationLines.unshift(newLine);
+            
+            // Keep only the first 15 lines for display (newest at top)
+            if (translationLines.length > 15) {
+                translationLines = translationLines.slice(0, 15);
+            }
+
+            renderTranslationLines();
+            console.log('Updated Dutch translation:', text);
+        }
+
+        // Render translation lines
+        function renderTranslationLines() {
+            if (translationLines.length === 0) {
+                translationScroll.innerHTML = '<div class="translation-line translation-text waiting">Waiting for translation...</div>';
+                return;
+            }
+
+            translationScroll.innerHTML = translationLines.map((line, index) => {
+                // Make the first line much larger and more prominent
+                const sizeScale = index === 0 ? 1.6 : Math.max(0.5, 1 - (index * 0.12));
+                const spacing = index === 0 ? "margin-bottom: 2rem;" : "margin-bottom: 0.5rem;";
+                const opacity = Math.max(0.15, 1 - (index * 0.1));
+                const fontSize = `clamp(${1.125 * sizeScale}rem, ${3.5 * sizeScale}vw, ${4.5 * sizeScale}rem)`;
+                
+                return `
+                    <div class="translation-line translation-text fade-in-up" 
+                         style="opacity: ${opacity}; ${spacing} font-size: ${fontSize}">
+                        ${line.text}
+                    </div>
+                `;
+            }).join('');
+
+            // Keep scroll at top since newest translations appear at top
+            translationScroll.scrollTop = 0;
+        }
+
+        // WebSocket connection management
         function connectWebSocket() {
             try {
-                updateDebug('Connecting to WebSocket server...');
+                updateStatus('Connecting to server...', 'normal');
                 websocket = new WebSocket('ws://localhost:8765');
 
                 websocket.onopen = function(event) {
-                    console.log('WebSocket connected');
-                    updateDebug('Connected to translation server');
+                    console.log('WebSocket connected successfully');
+                    updateStatus('Connected', 'connected');
                     isConnected = true;
                 };
 
@@ -169,53 +609,82 @@
 
                         if (data.type === 'transcription' && data.language === 'ar') {
                             // Arabic transcription
-                            console.log('*** UPDATING ARABIC TEXT ***:', data.text);
                             updateArabicText(data.text);
-                            updateDebug(`Arabic: ${data.text.substring(0, 30)}...`);
+                            updateStatus('Receiving Arabic...', 'connected');
                         } else if (data.type === 'translation' && data.language === 'nl') {
                             // Dutch translation
-                            console.log('*** UPDATING DUTCH TEXT ***:', data.text);
-                            updateDutchText(data.text);
-                            updateDebug(`Dutch: ${data.text.substring(0, 30)}...`);
+                            updateDutchTranslation(data.text);
+                            updateStatus('Translation updated', 'connected');
                         }
                     } catch (error) {
                         console.error('Error parsing WebSocket message:', error);
+                        updateStatus('Message parsing error', 'disconnected');
                     }
                 };
 
                 websocket.onclose = function(event) {
-                    console.log('WebSocket disconnected');
-                    updateDebug('Disconnected from server');
+                    console.log('WebSocket disconnected', event);
+                    updateStatus('Disconnected', 'disconnected');
                     isConnected = false;
                     
                     // Retry connection after 3 seconds
                     setTimeout(() => {
-                        updateDebug('Retrying connection...');
-                        connectWebSocket();
+                        if (!isConnected) {
+                            updateStatus('Reconnecting...', 'normal');
+                            connectWebSocket();
+                        }
                     }, 3000);
                 };
 
                 websocket.onerror = function(error) {
                     console.error('WebSocket error:', error);
-                    updateDebug('Connection error - retrying...');
+                    updateStatus('Connection error', 'disconnected');
                 };
 
             } catch (error) {
-                console.error('Failed to connect WebSocket:', error);
-                updateDebug(`Connection failed: ${error.message}`);
+                console.error('Failed to create WebSocket:', error);
+                updateStatus('Connection failed', 'disconnected');
                 
                 // Retry connection after 3 seconds
                 setTimeout(() => {
-                    updateDebug('Retrying connection...');
                     connectWebSocket();
                 }, 3000);
+            }
+        }
+
+        // Load saved preferences
+        function loadPreferences() {
+            // Load theme preference
+            const savedTheme = localStorage.getItem('displayTheme');
+            if (savedTheme === 'light') {
+                isDarkTheme = false;
+                document.documentElement.classList.remove('dark');
+                themeIcon.innerHTML = moonIcon;
+            } else if (savedTheme === 'dark') {
+                isDarkTheme = true;
+                document.documentElement.classList.add('dark');
+                themeIcon.innerHTML = sunIcon;
+            } else {
+                // Use system preference
+                document.documentElement.classList.toggle('dark', isDarkTheme);
+                themeIcon.innerHTML = isDarkTheme ? sunIcon : moonIcon;
+            }
+
+            // Load transcription visibility preference
+            const savedTranscriptionHidden = localStorage.getItem('transcriptionHidden');
+            if (savedTranscriptionHidden === 'true') {
+                showTranscription = false;
+                transcriptionSection.classList.add('hidden');
+                transcriptionIcon.innerHTML = eyeClosedIcon;
             }
         }
 
         // Initialize the application
         function initializeApp() {
             console.log('Initializing Live Translation Display...');
-            updateDebug('Starting connection...');
+            
+            // Load user preferences
+            loadPreferences();
             
             // Start WebSocket connection
             connectWebSocket();
@@ -232,6 +701,15 @@
             window.addEventListener('beforeunload', () => {
                 if (websocket) {
                     websocket.close();
+                }
+            });
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 't' || event.key === 'T') {
+                    toggleTheme();
+                } else if (event.key === 'h' || event.key === 'H') {
+                    toggleTranscription();
                 }
             });
         }
