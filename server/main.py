@@ -173,8 +173,8 @@ async def entrypoint(job: JobContext):
         transcription_config=TranscriptionConfig(
             language="ar",
             enable_partials=True,
-            max_delay=1.0,
-            punctuation_overrides={"sensitivity": 0.5},
+            max_delay=5.0,
+            punctuation_overrides={"sensitivity": 0.3},
             diarization="speaker"
         )
     )  # Configure for Arabic using Speechmatics with partials, low delay, and speaker diarization
@@ -191,7 +191,7 @@ async def entrypoint(job: JobContext):
     # Sentence accumulation for proper sentence-by-sentence translation
     accumulated_text = ""  # Accumulates text until we get a complete sentence
     last_final_transcript = ""  # Keep track of the last final transcript to avoid duplicates
-    translation_delay = 2.0  # Reduced to 2 seconds for faster incomplete sentence translation
+    translation_delay = 10.0  # Reduced to 2 seconds for faster incomplete sentence translation
     pending_translation_task = None
     
     logger.info(f"🚀 Starting entrypoint for room: {job.room.name if job.room else 'unknown'}")
@@ -207,7 +207,7 @@ async def entrypoint(job: JobContext):
         
         # Use regex to find sentence endings - be more flexible with sentence detection
         # Added Arabic punctuation marks
-        sentence_pattern = r'([.!?؟]+|\n)'
+        sentence_pattern = r'([.!?؟]+)'
         parts = re.split(sentence_pattern, text)
         
         complete_sentences = []
@@ -215,7 +215,7 @@ async def entrypoint(job: JobContext):
         
         i = 0
         while i < len(parts):
-            if i + 1 < len(parts) and re.match(r'[.!?\n؟]+', parts[i+1]):
+            if i + 1 < len(parts) and re.match(r'[.!?؟]+', parts[i+1]):
                 # This is a complete sentence
                 sentence = (parts[i] + parts[i+1]).strip()
                 if sentence and not sentence.isspace():
@@ -347,8 +347,8 @@ async def entrypoint(job: JobContext):
                                         if complete_sentences:
                                             await _translate_sentences(complete_sentences)
                                         # Also translate any remaining incomplete text before starting new
-                                        if remaining.strip():
-                                            await _translate_sentences([remaining])
+                                        #if remaining.strip():
+                                        #    await _translate_sentences([remaining])
                                     accumulated_text = final_text
                             else:
                                 accumulated_text = final_text

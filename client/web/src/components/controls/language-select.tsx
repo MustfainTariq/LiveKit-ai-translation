@@ -87,17 +87,18 @@ const LanguageSelect = () => {
         const targetLanguages = languages.filter((lang: Language) => lang.code !== "ar");
         setLanguages(targetLanguages);
       } catch (error) {
-        console.error("RPC call failed: ", error);
-        setError("Failed to fetch languages");
+       // console.error("RPC call failed: ", error);
+        // setError("Failed to fetch languages");
         
         // Fallback to default languages if RPC fails (excluding Arabic as source language)
         const fallbackLanguages = [
+          { code: "nl", name: "Dutch", flag: "🇳🇱" },
           { code: "en", name: "English", flag: "🇺🇸" },
           { code: "es", name: "Spanish", flag: "🇪🇸" },
           { code: "fr", name: "French", flag: "🇫🇷" },
           { code: "de", name: "German", flag: "🇩🇪" },
-          { code: "ja", name: "Japanese", flag: "🇯🇵" },
-          { code: "nl", name: "Dutch", flag: "🇳🇱" },
+          { code: "ja", name: "Japanese", flag: "🇯🇵" }
+          ,
         ];
         console.log("Using fallback languages:", fallbackLanguages);
         setLanguages(fallbackLanguages);
@@ -143,7 +144,7 @@ const LanguageSelect = () => {
       {error && (
         <span className="ml-2 text-xs text-red-500" title={error}>⚠️</span>
       )}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <button 
           onClick={debugConnection}
           className="ml-2 px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500"
@@ -151,7 +152,7 @@ const LanguageSelect = () => {
         >
           🐛
         </button>
-      )}
+      )} */}
     </div>
   );
 };
