@@ -21,12 +21,6 @@ import { ConnectionState } from "livekit-client";
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 
-const DEFAULT_PROMPT = `You are an expert Arabic-to-English translator. Translate the following Arabic text to English. Only provide the English translation, without any additional commentary or explanations.
-
-Arabic text: {text}
-
-English translation:`;
-
 // Generate a random party ID
 function generatePartyId(): string {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -34,7 +28,6 @@ function generatePartyId(): string {
 
 export default function Party() {
   const [selectedLanguage, setSelectedLanguage] = useState('nl');
-  const [customPrompt, setCustomPrompt] = useState(DEFAULT_PROMPT);
   const [showSettings, setShowSettings] = useState(false);
   const [backendUrl, setBackendUrl] = useState('ws://localhost:8765');
   const [isUploading, setIsUploading] = useState(false);
@@ -248,24 +241,7 @@ export default function Party() {
     }
   };
 
-  const handleUpdatePrompt = async () => {
-    try {
-      // For now, just update local state
-      // TODO: Send prompt to backend when HTTP endpoints are available
-      
-      toast({
-        title: "Success",
-        description: "Translation prompt updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating prompt:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update prompt",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const handleFileSelectEvent = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -400,10 +376,7 @@ export default function Party() {
         {showSettings && (
           <SettingsPanel
             backendUrl={backendUrl}
-            customPrompt={customPrompt}
             onBackendUrlChange={setBackendUrl}
-            onCustomPromptChange={setCustomPrompt}
-            onUpdatePrompt={handleUpdatePrompt}
           />
         )}
 
