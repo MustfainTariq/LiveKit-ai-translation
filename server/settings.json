@@ -1,0 +1,11 @@
+{
+  "stt": {
+    "max_delay": 5.0,
+    "punctuation_overrides": 0.3
+  },
+  "llm": {
+    "context_enabled": true,
+    "context_sentences": 10,
+    "custom_prompt": ""
+  }
+}

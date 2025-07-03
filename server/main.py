@@ -25,6 +25,14 @@ from livekit.plugins import openai, silero, speechmatics
 from livekit.plugins.speechmatics.types import TranscriptionConfig
 from dotenv import load_dotenv
 
+# Import settings from web server
+try:
+    from web_server import get_current_settings
+    SETTINGS_AVAILABLE = True
+except ImportError:
+    print("Warning: Could not import settings from web_server. Using default values.")
+    SETTINGS_AVAILABLE = False
+
 load_dotenv()
 
 logger = logging.getLogger("transcriber")
@@ -106,25 +114,124 @@ LanguageCode = Enum(
     {lang.name: code for code, lang in languages.items()},  # Enum entries: name -> code mapping
 )
 
-
 class Translator:
-    def __init__(self, room: rtc.Room, lang: Enum):
+    def __init__(self, room: rtc.Room, lang: Enum, max_context_pairs: int = 10):
         self.room = room
         self.lang = lang
-        # Fixed: Use append_message instead of append
-        self.context = llm.ChatContext()
-        self.context.add_message(
-            role="system",
-            content=(
+        self.max_context_pairs = max_context_pairs  # Maximum number of user-assistant pairs to keep
+        
+        # Track messages manually since ChatContext doesn't expose messages
+        self.message_history = []  # List of (role, content) tuples
+        
+        # Get custom prompt from settings if available
+        custom_prompt = ""
+        if SETTINGS_AVAILABLE:
+            try:
+                settings = get_current_settings()
+                custom_prompt = settings.llm.custom_prompt
+            except Exception as e:
+                logger.warning(f"Could not get custom prompt from settings: {e}")
+        
+        # Use custom prompt if available, otherwise use default
+        if custom_prompt.strip():
+            # Replace {language} placeholder in custom prompt
+            prompt_text = custom_prompt.replace("{language}", lang.value).replace("{lang}", lang.value)
+            self.system_message = ("system", prompt_text)
+            logger.info(f"🎯 TRANSLATOR CREATED for {lang.value} with CUSTOM PROMPT:")
+            logger.info(f"   📝 Prompt length: {len(prompt_text)} characters")
+            logger.info(f"   📝 Prompt preview: {prompt_text[:150]}{'...' if len(prompt_text) > 150 else ''}")
+        else:
+            self.system_message = (
+                "system",
                 f"You are a translator for language: {lang.value}. "
                 f"Your only response should be the exact translation of input text in the {lang.value} language."
-            ),
-        )
+            )
+            logger.info(f"🎯 TRANSLATOR CREATED for {lang.value} with DEFAULT PROMPT")
+            logger.info(f"   📝 Default prompt: {self.system_message[1]}")
+        
+        # Initialize context with system message
+        self._rebuild_context()
         self.llm = openai.LLM()
 
+    def _rebuild_context(self):
+        """Rebuild the ChatContext with current message history"""
+        self.context = llm.ChatContext()
+        
+        # Add system message
+        self.context.add_message(
+            role=self.system_message[0],
+            content=self.system_message[1]
+        )
+        
+        # Add conversation messages
+        for role, content in self.message_history:
+            self.context.add_message(role=role, content=content)
+
+    def _maintain_context_window(self):
+        """Maintain rolling context window by keeping only the last N translation pairs"""
+        # Get current context settings
+        context_enabled = True
+        context_sentences = self.max_context_pairs
+        
+        if SETTINGS_AVAILABLE:
+            try:
+                settings = get_current_settings()
+                context_enabled = settings.llm.context_enabled
+                context_sentences = settings.llm.context_sentences
+                logger.debug(f"🔧 CONTEXT MANAGEMENT for {self.lang.value}: enabled={context_enabled}, max_sentences={context_sentences}")
+            except Exception as e:
+                logger.warning(f"Could not get LLM context settings: {e}")
+        else:
+            logger.debug(f"⚠️ CONTEXT MANAGEMENT: Using defaults for {self.lang.value}: enabled={context_enabled}, max_sentences={context_sentences}")
+        
+        # If context is disabled, clear message history except system message
+        if not context_enabled:
+            old_length = len(self.message_history)
+            self.message_history = []
+            self._rebuild_context()
+            logger.info(f"🧠 LLM CONTEXT DISABLED for {self.lang.value}: cleared {old_length} messages from history")
+            return
+        
+        # Keep only the last context_sentences * 2 messages (user-assistant pairs)
+        max_conversation_messages = context_sentences * 2
+        
+        if len(self.message_history) > max_conversation_messages:
+            old_length = len(self.message_history)
+            # Keep only the most recent messages
+            self.message_history = self.message_history[-max_conversation_messages:]
+            
+            # Rebuild context with updated message history
+            self._rebuild_context()
+            
+            logger.info(f"📚 CONTEXT WINDOW TRIMMED for {self.lang.value}: {old_length} -> {len(self.message_history)} messages (max: {context_sentences} pairs)")
+        else:
+            logger.debug(f"📚 CONTEXT WINDOW OK for {self.lang.value}: {len(self.message_history)} messages (under limit of {context_sentences} pairs)")
+
     async def translate(self, message: str, track: rtc.Track):
-        # Fixed: Use append_message with content parameter instead of text
-        self.context.add_message(content=message, role="user")
+        # DEBUG: Print current settings before translation
+        if SETTINGS_AVAILABLE:
+            try:
+                settings = get_current_settings()
+                logger.info(f"🔧 TRANSLATION DEBUG for {self.lang.value}:")
+                logger.info(f"   📝 Input text: '{message[:50]}{'...' if len(message) > 50 else ''}'")
+                logger.info(f"   🧠 LLM Context: {'ENABLED' if settings.llm.context_enabled else 'DISABLED'}")
+                logger.info(f"   📚 Context Sentences: {settings.llm.context_sentences}")
+                logger.info(f"   💬 Current History Length: {len(self.message_history)} messages")
+                logger.info(f"   🎯 Custom Prompt: {'YES' if settings.llm.custom_prompt else 'NO (using default)'}")
+            except Exception as e:
+                logger.warning(f"❌ Could not get settings for translation debug: {e}")
+        else:
+            logger.warning(f"⚠️ TRANSLATION DEBUG: Settings not available for {self.lang.value}")
+        
+        # Add user message to history
+        self.message_history.append(("user", message))
+        
+        # Maintain context window before translation
+        self._maintain_context_window()
+        
+        # Rebuild context to include the new user message
+        self._rebuild_context()
+        
         stream = self.llm.chat(chat_ctx=self.context)
         translated_message = ""
         async for chunk in stream:
@@ -134,6 +241,12 @@ class Translator:
             if content is None:
                 break
             translated_message += content
+
+        # Add assistant's response to history
+        self.message_history.append(("assistant", translated_message))
+        
+        # Maintain context window after adding assistant response
+        self._maintain_context_window()
 
         segment = rtc.TranscriptionSegment(
             id=utils.misc.shortuuid("SG_"),
@@ -156,7 +269,13 @@ class Translator:
         print(
             f"message: {message}, translated to {self.lang.value}: {translated_message}"
         )
-
+        
+        # Enhanced debug logging for translation result
+        logger.info(f"🎯 TRANSLATION COMPLETED for {self.lang.value}:")
+        logger.info(f"   📝 Input: '{message[:50]}{'...' if len(message) > 50 else ''}'")
+        logger.info(f"   ✅ Output: '{translated_message[:50]}{'...' if len(translated_message) > 50 else ''}'")
+        logger.info(f"   📚 Final context size: {len(self.message_history)} conversation messages + 1 system message")
+        logger.debug(f"   📊 Full translation: {translated_message}")
 
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
@@ -167,17 +286,37 @@ async def entrypoint(job: JobContext):
     # This will be the language that users are actually speaking (host/speaker language)
     source_language = "ar"  # Arabic is the default source language - host speaks Arabic
     
+    # Get STT settings
+    max_delay = 5.0  # Default value
+    punctuation_sensitivity = 0.3  # Default value
+    
+    if SETTINGS_AVAILABLE:
+        try:
+            settings = get_current_settings()
+            max_delay = settings.stt.max_delay
+            punctuation_sensitivity = settings.stt.punctuation_overrides
+            logger.info(f"✅ LOADED STT SETTINGS - max_delay: {max_delay}, punctuation_sensitivity: {punctuation_sensitivity}")
+            logger.info(f"✅ LOADED LLM SETTINGS - context_enabled: {settings.llm.context_enabled}, context_sentences: {settings.llm.context_sentences}")
+            logger.info(f"✅ CUSTOM PROMPT LENGTH: {len(settings.llm.custom_prompt)} characters")
+            if settings.llm.custom_prompt:
+                logger.info(f"✅ CUSTOM PROMPT PREVIEW: {settings.llm.custom_prompt[:100]}...")
+        except Exception as e:
+            logger.warning(f"❌ Could not get STT settings, using defaults: {e}")
+    else:
+        logger.warning(f"⚠️ SETTINGS NOT AVAILABLE - Using hardcoded defaults: max_delay={max_delay}, punctuation_sensitivity={punctuation_sensitivity}")
+    
     # Configure Speechmatics STT for Arabic speech recognition
     # Speechmatics supports Arabic language recognition with enhanced settings
+    logger.info(f"🎤 CONFIGURING STT WITH: max_delay={max_delay}, punctuation_sensitivity={punctuation_sensitivity}")
     stt_provider = speechmatics.STT(
         transcription_config=TranscriptionConfig(
             language="ar",
             enable_partials=True,
-            max_delay=5.0,
-            punctuation_overrides={"sensitivity": 0.3},
+            max_delay=max_delay,
+            punctuation_overrides={"sensitivity": punctuation_sensitivity},
             diarization="speaker"
         )
-    )  # Configure for Arabic using Speechmatics with partials, low delay, and speaker diarization
+    )  # Configure for Arabic using Speechmatics with partials, configurable delay, and speaker diarization
     
     tasks = []
     translators = {}
@@ -474,6 +613,17 @@ async def entrypoint(job: JobContext):
                         # Create a translator for the requested language using the language enum
                         language_obj = languages[lang]
                         language_enum = getattr(LanguageCode, language_obj.name)
+                        
+                        # Debug: Show current settings when creating new translator
+                        if SETTINGS_AVAILABLE:
+                            try:
+                                settings = get_current_settings()
+                                logger.info(f"🆕 CREATING NEW TRANSLATOR for {language_obj.name} with current settings:")
+                                logger.info(f"   🧠 LLM Context: {'ENABLED' if settings.llm.context_enabled else 'DISABLED'} ({settings.llm.context_sentences} sentences)")
+                                logger.info(f"   🎯 Custom Prompt: {'YES' if settings.llm.custom_prompt else 'NO'}")
+                            except Exception as e:
+                                logger.warning(f"❌ Could not show settings for new translator: {e}")
+                        
                         translators[lang] = Translator(job.room, language_enum)
                         logger.info(f"🆕 Added translator for ROOM {job.room.name} (requested by {participant.identity}), language: {language_obj.name}")
                         logger.info(f"📊 Total translators for room {job.room.name}: {len(translators)} -> {list(translators.keys())}")

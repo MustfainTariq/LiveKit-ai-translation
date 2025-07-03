@@ -3,86 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Arabic to Dutch Translation Display</title>
+    <title>Jamaa - Live Arabic to Dutch Translation Display</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Islamic-inspired design system with soft, spiritual colors */
         :root {
             /* Islamic pink soft background with dark teal green text */
-            --background: hsl(330, 45%, 96%);
-            --foreground: hsl(180, 65%, 15%);
+            --background: 330 45% 96%;
+            --foreground: 180 65% 15%;
 
-            --card: hsl(330, 35%, 94%);
-            --card-foreground: hsl(180, 65%, 15%);
+            --card: 330 35% 94%;
+            --card-foreground: 180 65% 15%;
 
-            --popover: hsl(330, 35%, 94%);
-            --popover-foreground: hsl(180, 65%, 15%);
+            --popover: 330 35% 94%;
+            --popover-foreground: 180 65% 15%;
 
             /* Dark teal green primary */
-            --primary: hsl(180, 65%, 20%);
-            --primary-foreground: hsl(330, 45%, 96%);
+            --primary: 180 65% 20%;
+            --primary-foreground: 330 45% 96%;
 
             /* Soft rose gold accents */
-            --secondary: hsl(340, 30%, 85%);
-            --secondary-foreground: hsl(180, 65%, 15%);
+            --secondary: 340 30% 85%;
+            --secondary-foreground: 180 65% 15%;
 
-            --muted: hsl(330, 25%, 90%);
-            --muted-foreground: hsl(180, 40%, 35%);
+            --muted: 330 25% 90%;
+            --muted-foreground: 180 40% 35%;
 
             /* Warm rose accent */
-            --accent: hsl(340, 40%, 80%);
-            --accent-foreground: hsl(180, 65%, 15%);
+            --accent: 340 40% 80%;
+            --accent-foreground: 180 65% 15%;
 
-            --destructive: hsl(0, 84.2%, 60.2%);
-            --destructive-foreground: hsl(330, 45%, 96%);
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 330 45% 96%;
 
-            --border: hsl(330, 25%, 85%);
-            --input: hsl(330, 25%, 85%);
-            --ring: hsl(180, 65%, 25%);
+            --border: 330 25% 85%;
+            --input: 330 25% 85%;
+            --ring: 180 65% 25%;
 
             --radius: 0.5rem;
         }
 
         .dark {
             /* Enhanced dark mode with deeper islamic colors */
-            --background: hsl(210, 40%, 3%);
-            --foreground: hsl(180, 25%, 95%);
+            --background: 210 40% 3%;
+            --foreground: 180 25% 95%;
 
-            --card: hsl(210, 35%, 6%);
-            --card-foreground: hsl(180, 25%, 95%);
+            --card: 210 35% 6%;
+            --card-foreground: 180 25% 95%;
 
-            --popover: hsl(210, 35%, 6%);
-            --popover-foreground: hsl(180, 25%, 95%);
+            --popover: 210 35% 6%;
+            --popover-foreground: 180 25% 95%;
 
-            --primary: hsl(180, 45%, 35%);
-            --primary-foreground: hsl(180, 25%, 95%);
+            --primary: 180 45% 35%;
+            --primary-foreground: 180 25% 95%;
 
-            --secondary: hsl(45, 70%, 65%);
-            --secondary-foreground: hsl(210, 40%, 3%);
+            --secondary: 45 70% 65%;
+            --secondary-foreground: 210 40% 3%;
 
-            --muted: hsl(210, 35%, 10%);
-            --muted-foreground: hsl(210, 20%, 70%);
+            --muted: 210 35% 10%;
+            --muted-foreground: 210 20% 70%;
 
-            --accent: hsl(40, 75%, 60%);
-            --accent-foreground: hsl(210, 40%, 3%);
+            --accent: 40 75% 60%;
+            --accent-foreground: 210 40% 3%;
 
-            --destructive: hsl(0, 62.8%, 30.6%);
-            --destructive-foreground: hsl(210, 40%, 98%);
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
 
-            --border: hsl(210, 25%, 15%);
-            --input: hsl(210, 25%, 15%);
-            --ring: hsl(180, 45%, 55%);
+            --border: 210 25% 15%;
+            --input: 210 25% 15%;
+            --ring: 180 45% 55%;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            border-color: hsl(var(--border));
         }
 
         body {
-            background: var(--background);
-            color: var(--foreground);
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
             font-family: 'Noto Sans', 'Noto Sans Arabic', sans-serif;
             font-weight: 500;
             background-attachment: fixed;
@@ -91,28 +92,76 @@
             transition: all 0.3s ease;
         }
 
+        /* Utility classes */
         .translation-box {
-            background: color-mix(in srgb, var(--card) 10%, transparent);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+            background: hsl(var(--card) / 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid hsl(var(--border) / 0.3);
             border-radius: 1rem;
-            box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--primary) 10%, transparent);
+            box-shadow: 0 8px 32px 0 hsl(var(--primary) / 0.1);
+        }
+        
+        .transcription-container {
+            background: hsl(var(--card) / 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid hsl(var(--border) / 0.3);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 hsl(var(--primary) / 0.1);
+            font-size: clamp(1.0rem, 2.0vw, 2.75rem);
+            min-height: 1.7em;
+        }
+        
+        .translation-container {
+            background: hsl(var(--card) / 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid hsl(var(--border) / 0.3);
+            border-radius: 1rem;
+            position: relative;
+            box-shadow: 0 8px 32px 0 hsl(var(--primary) / 0.1);
+            font-size: clamp(1.25rem, 2.5vw, 3.25rem);
+            height: min(11em, 40vh);
+            max-height: 40vh;
+            scroll-behavior: smooth;
         }
 
+        .translation-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70%;
+            background: linear-gradient(to bottom, hsl(var(--background)), transparent);
+            pointer-events: none;
+            border-radius: inherit;
+            z-index: 1;
+        }
+        
         .translation-text {
-            color: var(--foreground);
+            color: hsl(var(--foreground));
             line-height: 1.6;
             font-family: 'Noto Sans', 'Noto Sans Arabic', sans-serif;
-            font-size: clamp(0.875rem, 2.5vw, 3rem);
             word-wrap: break-word;
             hyphens: auto;
+        }
+
+        /* Hide scrollbar */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
         /* Main container */
         .main-container {
             min-height: 100vh;
-            background: var(--background);
+            background: hsl(var(--background));
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
@@ -131,20 +180,20 @@
         .control-button {
             padding: 0.75rem;
             border-radius: 9999px;
-            background: color-mix(in srgb, var(--card) 20%, transparent);
-            border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+            background: hsl(var(--card) / 0.2);
+            border: 1px solid hsl(var(--border) / 0.3);
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            color: var(--foreground);
+            color: hsl(var(--foreground));
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .control-button:hover {
-            background: color-mix(in srgb, var(--card) 30%, transparent);
+            background: hsl(var(--card) / 0.3);
             transform: translateY(-2px);
         }
 
@@ -160,56 +209,14 @@
             margin-bottom: 1.5rem;
             display: flex;
             flex-direction: column;
-        }
-
-        /* Translation section - fixed height */
-        .translation-section {
-            margin-bottom: 2rem;
-        }
-
-        .translation-content {
-            width: 100%;
-            max-width: 112rem;
-            margin: 0 auto;
-            height: calc(100vh - 17.5rem);
-            padding: 0.75rem 1rem 1.5rem;
-        }
-
-        .translation-scroll {
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            padding-top: 10%;
-        }
-
-        .translation-line {
-            text-align: center;
-            transition: all 0.5s ease;
-            opacity: 1;
-        }
-
-        .translation-line:first-child {
-            margin-bottom: 2rem;
-        }
-
-        .translation-line:not(:first-child) {
-            margin-bottom: 0.5rem;
-        }
-
-        .translation-line.waiting {
-            color: var(--muted-foreground);
-            font-style: italic;
+            gap: 1rem;
+            padding: 1rem;
         }
 
         /* Arabic transcription section */
         .transcription-section {
-            width: 100%;
-            max-width: 112rem;
+            width: calc(100vw - 3rem);
             margin: 0 auto;
-            height: 6rem;
             padding: 0.75rem 1rem 1.5rem;
             transition: all 0.3s ease;
             overflow: hidden;
@@ -250,25 +257,84 @@
         }
 
         .arabic-word.waiting {
-            color: var(--muted-foreground);
+            color: hsl(var(--muted-foreground));
             font-style: italic;
             text-align: center;
             width: 100%;
+            direction: ltr;
+        }
+
+        /* Camera section */
+        .camera-section {
+            width: 100%;
+            max-width: 112rem;
+            margin: 0 auto;
+            height: 30vh;
+            background: #000;
+            border-radius: 0.75rem;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .camera-section.hidden {
+            display: none;
+        }
+
+        .camera-placeholder {
+            color: #9ca3af;
+            font-size: 1.125rem;
+        }
+
+        /* Translation section */
+        .translation-section {
+            width: calc(100vw - 3rem);
+            margin: 0 auto;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            transition: all 0.3s ease;
+        }
+
+        /* When camera is hidden, translation section becomes larger */
+        .camera-section.hidden + .translation-section {
+            height: calc(70vh - 2rem);
+        }
+
+        .translation-scroll {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 100%;
+        }
+
+        .translation-content {
+            text-align: left;
+        }
+
+        .translation-line {
+            transition: all 0.5s ease;
+            opacity: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .translation-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .translation-line.waiting {
+            color: hsl(var(--muted-foreground));
+            font-style: italic;
+            text-align: center;
         }
 
         /* Animations */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInDown {
             from {
                 opacity: 0;
                 transform: translateY(10px);
@@ -279,14 +345,14 @@
             }
         }
 
-        @keyframes fadeOut {
+        @keyframes fadeInDown {
             from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
                 opacity: 0;
                 transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
@@ -298,18 +364,14 @@
             animation: fadeInDown 0.3s ease-out;
         }
 
-        .fade-out {
-            animation: fadeOut 0.3s ease-out;
-        }
-
         /* Connection status */
         .status-indicator {
             position: fixed;
             bottom: 1.5rem;
             left: 1.5rem;
-            background: color-mix(in srgb, var(--card) 20%, transparent);
-            border: 1px solid var(--border);
-            color: var(--foreground);
+            background: hsl(var(--card) / 0.2);
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
             padding: 0.5rem 0.75rem;
             border-radius: 1.25rem;
             font-size: 0.75rem;
@@ -331,24 +393,25 @@
 
         /* Responsive design */
         @media (max-width: 1024px) {
-            .translation-content {
-                height: calc(100vh - 15rem);
+            .transcription-section,
+            .translation-section {
+                width: calc(100vw - 1.5rem);
                 padding: 0.75rem;
             }
             
-            .transcription-section {
-                height: 5.25rem;
+            .camera-section {
+                height: 25vh;
             }
         }
 
         @media (max-width: 768px) {
-            .translation-content {
-                height: calc(100vh - 12.5rem);
-                padding: 0.5rem;
+            .main-container {
+                padding: 1rem;
             }
             
-            .transcription-section {
-                height: 4.5rem;
+            .content-container {
+                margin-top: 3rem;
+                padding: 0.5rem;
             }
             
             .controls {
@@ -365,20 +428,30 @@
                 width: 1rem;
                 height: 1rem;
             }
+            
+            .camera-section {
+                height: 20vh;
+            }
         }
 
         @media (max-width: 480px) {
             .main-container {
-                padding: 1rem;
+                padding: 0.75rem;
             }
             
-            .translation-content {
-                height: calc(100vh - 11rem);
+            .content-container {
+                margin-top: 2.5rem;
+                padding: 0.25rem;
+            }
+            
+            .transcription-section,
+            .translation-section {
+                width: calc(100vw - 1rem);
                 padding: 0.5rem;
             }
             
-            .transcription-section {
-                height: 3.75rem;
+            .camera-section {
+                height: 18vh;
             }
         }
     </style>
@@ -397,6 +470,12 @@
                 <circle cx="12" cy="12" r="3"></circle>
             </svg>
         </button>
+        <button class="control-button" id="cameraToggle" onclick="toggleCamera()" aria-label="Toggle camera visibility">
+            <svg id="cameraIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+        </button>
     </div>
 
     <!-- Status indicator -->
@@ -408,25 +487,30 @@
     <div class="main-container">
         <!-- Content container -->
         <div class="content-container">
-            <!-- Translation Box - fixed height -->
-            <div class="translation-section">
-                <div class="translation-box translation-content">
-                    <div class="translation-scroll" id="translationScroll">
-                        <div class="translation-line translation-text waiting" id="waitingTranslation">
-                            Waiting for translation...
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Arabic Transcription Box -->
-            <div class="translation-box transcription-section" id="transcriptionSection">
+            <!-- Arabic Transcription Box - Top -->
+            <div class="transcription-container transcription-section" id="transcriptionSection">
                 <div class="transcription-content">
                     <div class="arabic-container">
                         <div class="arabic-words">
                             <span class="arabic-word translation-text waiting" id="waitingArabic">
                                 انتظار النص العربي...
                             </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Feed Placeholder - Middle -->
+            <div class="camera-section" id="cameraSection">
+                <span class="camera-placeholder">Visuals / Camera Feed Area</span>
+            </div>
+
+            <!-- Dutch Translation Box - Bottom -->
+            <div class="translation-container translation-section">
+                <div class="translation-scroll scrollbar-hide" id="translationScroll">
+                    <div class="translation-content">
+                        <div class="translation-text waiting" id="waitingTranslation">
+                            Waiting for translation...
                         </div>
                     </div>
                 </div>
@@ -441,15 +525,19 @@
         let translationLines = [];
         let arabicWords = [];
         let showTranscription = true;
+        let showCamera = true;
         let isDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         // DOM elements
         const statusElement = document.getElementById('statusIndicator');
         const transcriptionSection = document.getElementById('transcriptionSection');
+        const cameraSection = document.getElementById('cameraSection');
         const themeToggle = document.getElementById('themeToggle');
         const transcriptionToggle = document.getElementById('transcriptionToggle');
+        const cameraToggle = document.getElementById('cameraToggle');
         const themeIcon = document.getElementById('themeIcon');
         const transcriptionIcon = document.getElementById('transcriptionIcon');
+        const cameraIcon = document.getElementById('cameraIcon');
         const translationScroll = document.getElementById('translationScroll');
         const waitingTranslation = document.getElementById('waitingTranslation');
         const waitingArabic = document.getElementById('waitingArabic');
@@ -459,6 +547,8 @@
         const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
         const eyeIcon = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
         const eyeClosedIcon = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+        const cameraIconSvg = `<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle>`;
+        const cameraOffIconSvg = `<line x1="1" y1="1" x2="23" y2="23"></line><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"></path>`;
 
         // Theme management
         function toggleTheme() {
@@ -480,6 +570,17 @@
             
             // Save visibility preference
             localStorage.setItem('transcriptionHidden', (!showTranscription).toString());
+        }
+
+        // Camera visibility management
+        function toggleCamera() {
+            showCamera = !showCamera;
+            cameraSection.classList.toggle('hidden', !showCamera);
+            
+            cameraIcon.innerHTML = showCamera ? cameraIconSvg : cameraOffIconSvg;
+            
+            // Save visibility preference
+            localStorage.setItem('cameraHidden', (!showCamera).toString());
         }
 
         // Status management
@@ -553,11 +654,11 @@
                 timestamp: Date.now()
             };
 
-            translationLines.unshift(newLine);
+            translationLines.push(newLine);
             
-            // Keep only the first 15 lines for display (newest at top)
+            // Keep only the last 15 lines for display (newest at bottom)
             if (translationLines.length > 15) {
-                translationLines = translationLines.slice(0, 15);
+                translationLines = translationLines.slice(-15);
             }
 
             renderTranslationLines();
@@ -566,28 +667,19 @@
 
         // Render translation lines
         function renderTranslationLines() {
+            const content = document.querySelector('.translation-content');
+            
             if (translationLines.length === 0) {
-                translationScroll.innerHTML = '<div class="translation-line translation-text waiting">Waiting for translation...</div>';
+                content.innerHTML = '<div class="translation-text waiting">Waiting for translation...</div>';
                 return;
             }
 
-            translationScroll.innerHTML = translationLines.map((line, index) => {
-                // Make the first line much larger and more prominent
-                const sizeScale = index === 0 ? 1.6 : Math.max(0.5, 1 - (index * 0.12));
-                const spacing = index === 0 ? "margin-bottom: 2rem;" : "margin-bottom: 0.5rem;";
-                const opacity = Math.max(0.15, 1 - (index * 0.1));
-                const fontSize = `clamp(${1.125 * sizeScale}rem, ${3.5 * sizeScale}vw, ${4.5 * sizeScale}rem)`;
-                
-                return `
-                    <div class="translation-line translation-text fade-in-up" 
-                         style="opacity: ${opacity}; ${spacing} font-size: ${fontSize}">
-                        ${line.text}
-                    </div>
-                `;
-            }).join('');
+            // Join all translation lines into one continuous text, like in the original design
+            const allText = translationLines.map(line => line.text).join(' ');
+            content.innerHTML = `<p class="translation-text fade-in-up">${allText}</p>`;
 
-            // Keep scroll at top since newest translations appear at top
-            translationScroll.scrollTop = 0;
+            // Auto-scroll to bottom
+            translationScroll.scrollTop = translationScroll.scrollHeight;
         }
 
         // WebSocket connection management
@@ -677,11 +769,19 @@
                 transcriptionSection.classList.add('hidden');
                 transcriptionIcon.innerHTML = eyeClosedIcon;
             }
+
+            // Load camera visibility preference
+            const savedCameraHidden = localStorage.getItem('cameraHidden');
+            if (savedCameraHidden === 'true') {
+                showCamera = false;
+                cameraSection.classList.add('hidden');
+                cameraIcon.innerHTML = cameraOffIconSvg;
+            }
         }
 
         // Initialize the application
         function initializeApp() {
-            console.log('Initializing Live Translation Display...');
+            console.log('Initializing Jamaa Live Translation Display...');
             
             // Load user preferences
             loadPreferences();
@@ -710,6 +810,8 @@
                     toggleTheme();
                 } else if (event.key === 'h' || event.key === 'H') {
                     toggleTranscription();
+                } else if (event.key === 'c' || event.key === 'C') {
+                    toggleCamera();
                 }
             });
         }
